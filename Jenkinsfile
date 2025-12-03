@@ -1,36 +1,45 @@
 pipeline {
     agent any
+
+    tools {
+        maven 'Maven-3.9'
+        jdk 'JDK-17'
+    }
+
     stages {
-        stage('clean') {
+        stage('Checkout') {
             steps {
-                sh 'mvn clean'
+                git branch: 'master', url: 'https://github.com/mallikarjunkolur/demo2.git'
             }
         }
-        stage('compile') {
+
+        stage('Build') {
             steps {
-                sh 'mvn compile'
+                sh 'mvn clean compile'
             }
         }
-        stage('test') {
+
+        stage('Test') {
             steps {
                 sh 'mvn test'
             }
-        }
-        stage('build') {
-            steps {
-                sh 'mvn clean install'
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
             }
         }
-    }
-    post {
-        success {
-            echo "build success"
-            mail to: "build.mallikarjun.k@gmail.com",
-            subject: "notify about build",
-            body: "build is success you can check artifact"    
+
+        stage('Package') {
+            steps {
+                sh 'mvn package'
+            }
         }
-        failure {
-            echo "build failed"
+
+        stage('Archive Artifact') {
+            steps {
+                archiveArtifacts artifacts: 'target/*.jar, target/*.war', fingerprint: true
+            }
         }
     }
 }
